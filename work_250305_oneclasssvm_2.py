@@ -130,20 +130,50 @@ with st.sidebar:
             st.success("Evaluation complete!")
 
 st.write("## Visualization")
-if "training_signals" in st.session_state:
-    for bead_number in st.session_state["selected_beads"]:
+if "chosen_bead_data" in st.session_state and "anomaly_results_svm" in locals():
+    for bead_number, results in anomaly_results_svm.items():
+        bead_data = [seg for seg in st.session_state["chosen_bead_data"] if seg["bead_number"] == bead_number]
+        file_names = [seg["file"] for seg in bead_data]
+        signals = [seg["data"].iloc[:, 0].values for seg in bead_data]
         fig = go.Figure()
         
-        # Plot training data
-        for signal in st.session_state["training_signals"]:
-            fig.add_trace(go.Scatter(y=signal, mode='lines', line=dict(color='black', width=1), name="Training Data"))
+        # Plot training data in black
+        for idx, signal in enumerate(signals):
+            file_name = file_names[idx]
+            fig.add_trace(go.Scatter(
+                y=signal,
+                mode='lines',
+                line=dict(color='black', width=1),
+                name=f"Training: {file_name}",
+                hoverinfo='text',
+                text=f"File: {file_name}<br>Type: Training Data"
+            ))
         
-        # Plot test data
-        if "test_results" in st.session_state and bead_number in st.session_state["test_results"]:
-            status = st.session_state["test_results"][bead_number]
-            color = 'blue' if status == 1 else 'red'
-            fig.add_trace(go.Scatter(y=st.session_state["test_signals"][bead_number], mode='lines', line=dict(color=color, width=1), name="New Data"))
+        # Overlay new data if available
+        if "new_bead_data" in st.session_state:
+            new_bead_data = [seg for seg in st.session_state["new_bead_data"] if seg["bead_number"] == bead_number]
+            new_file_names = [seg["file"] for seg in new_bead_data]
+            new_signals = [seg["data"].iloc[:, 0].values for seg in new_bead_data]
+            for idx, signal in enumerate(new_signals):
+                file_name = new_file_names[idx]
+                status = results[file_name]
+                color = 'red' if status == 'anomalous' else 'blue'
+                fig.add_trace(go.Scatter(
+                    y=signal,
+                    mode='lines',
+                    line=dict(color=color, width=1.5),
+                    name=f"Test: {file_name}",
+                    hoverinfo='text',
+                    text=f"File: {file_name}<br>Status: {status}<br>Type: Test Data"
+                ))
         
-        fig.update_layout(title=f"Bead Number {bead_number}: Normal vs. New Data", xaxis_title="Time Index", yaxis_title="Signal Value")
+        fig.update_layout(
+            title=f"Bead Number {bead_number}: One-Class SVM Results",
+            xaxis_title="Time Index",
+            yaxis_title="Signal Value",
+            showlegend=True
+        )
         st.plotly_chart(fig)
-st.success("Visualization complete!")
+    
+st.success("Analysis complete!")
+
