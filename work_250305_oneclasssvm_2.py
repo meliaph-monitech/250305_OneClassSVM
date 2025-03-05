@@ -92,19 +92,25 @@ with st.sidebar:
                             signal = df.iloc[start:end + 1, 0].values
                             features = extract_features(signal)
                             training_data.append(features)
-                
+        
                 training_data = np.array(training_data)
-                scaler = RobustScaler()
-                training_data = scaler.fit_transform(training_data)
                 
+                # Fit RobustScaler on training data
+                scaler = RobustScaler()
+                training_data_scaled = scaler.fit_transform(training_data)
+        
+                # Train One-Class SVM
                 oc_svm = OneClassSVM(nu=0.1, kernel='rbf')
-                oc_svm.fit(training_data)
+                oc_svm.fit(training_data_scaled)
+        
+                # Store the model and scaler
                 st.session_state["model"] = oc_svm
                 st.session_state["scaler"] = scaler
-                st.success("Model training complete!")
-                
-                st.session_state["training_signals"] = training_data
+                st.session_state["training_signals"] = training_data  # Store raw data
                 st.session_state["training_beads"] = bead_numbers
+        
+                st.success("Model training complete!")
+
     
     new_csv = st.file_uploader("Upload a new CSV file for evaluation", type=["csv"])
     if new_csv and "model" in st.session_state:
