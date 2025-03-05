@@ -132,18 +132,18 @@ with st.sidebar:
 st.write("## Visualization")
 if "test_results" in st.session_state and "test_signals" in st.session_state:
     for bead_number, prediction in st.session_state["test_results"].items():
-        # Get the signal data for this bead_number
-        signal = st.session_state["test_signals"][bead_number]
-        
+        # Get the raw signal for this bead_number (before scaling)
+        raw_signal = st.session_state["test_signals"][bead_number]
+
         # Create the Plotly figure
         fig = go.Figure()
-        
+
         # Plot training data in black
         for file in csv_files:
             df = pd.read_csv(file)
             for start, end in st.session_state["bead_segments"].get(file, []):
                 if bead_number in st.session_state["selected_beads"]:
-                    train_signal = df.iloc[start:end + 1, 0].values
+                    train_signal = df.iloc[start:end + 1, 0].values  # ✅ Raw training signal
                     fig.add_trace(go.Scatter(
                         y=train_signal,
                         mode='lines',
@@ -157,7 +157,7 @@ if "test_results" in st.session_state and "test_signals" in st.session_state:
         status = 'anomalous' if prediction == -1 else 'normal'
         color = 'red' if status == 'anomalous' else 'blue'
         fig.add_trace(go.Scatter(
-            y=signal,
+            y=raw_signal,  # ✅ Use raw signal instead of scaled features
             mode='lines',
             line=dict(color=color, width=1.5),
             name=f"Test: Bead {bead_number}",
@@ -173,5 +173,6 @@ if "test_results" in st.session_state and "test_signals" in st.session_state:
             showlegend=True
         )
         st.plotly_chart(fig)
-    
+
 st.success("Analysis complete!")
+
