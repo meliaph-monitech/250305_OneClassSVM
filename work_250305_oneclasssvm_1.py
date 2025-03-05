@@ -88,7 +88,7 @@ with st.sidebar:
             if bead_features:
                 scaler = RobustScaler()
                 X_train = scaler.fit_transform(bead_features)
-                model = OneClassSVM(nu=0.1)
+                model = OneClassSVM()
                 model.fit(X_train)
                 st.session_state["model"] = model
                 st.session_state["scaler"] = scaler
